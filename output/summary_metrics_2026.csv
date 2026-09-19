@@ -1,0 +1,6 @@
+river,station_name,country,metric,unit,summer_2026_min,historical_min_record,new_record_set_2026,days_below_historical_record,days_extrem_niedrig,days_sehr_niedrig,avg_relative_position_pct
+Elbe,Dresden,Germany,Water Level,cm,43.0,46.0,True,2,25,31,70.2
+Garonne,Tonneins,France,Water Level,mm,-956.9,-1269.3,False,0,6,39,36.2
+Loire,Blois,France,Water Level,mm,-1232.1,-1221.3,True,58,88,0,0.1
+Rhine,Kaub,Germany,Water Level,cm,7.0,25.0,True,14,68,20,40.4
+Rhône,Ternay,France,Water Level,mm,193.3,44.3,False,0,4,28,35.9
