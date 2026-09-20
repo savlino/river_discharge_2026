@@ -61,8 +61,11 @@ def archive_raw_pegelonline(station_key: str, window: str = "P31D") -> Optional[
 
     RAW_PEGELONLINE_DIR.mkdir(parents=True, exist_ok=True)
     archive_path = RAW_PEGELONLINE_DIR / f"{station_key.lower()}_pegelonline_{window.lower()}.csv"
-    archive_path.write_text(raw_text, encoding="utf-8")
-    print(f"Archived raw PEGELONLINE response: {archive_path}")
+    if archive_path.exists():
+        print(f"Preserved existing PEGELONLINE API snapshot: {archive_path}")
+    else:
+        archive_path.write_text(raw_text, encoding="utf-8")
+        print(f"Archived raw PEGELONLINE response: {archive_path}")
 
     df_raw = pd.read_csv(StringIO(raw_text), sep=";")
     df_raw["date"] = pd.to_datetime(df_raw["timestamp"]).dt.strftime("%Y-%m-%d")
@@ -95,6 +98,10 @@ def validate_niwis_against_pegelonline(df_niwis: pd.DataFrame) -> pd.DataFrame:
             continue
 
         merged["diff_cm"] = np.round(merged["value"] - merged["pegelonline_daily_mean"], 1)
+        merged["relative_diff_pct"] = np.round(
+            merged["diff_cm"] / merged["value"].abs().replace(0, np.nan) * 100,
+            2,
+        )
         merged["station_name"] = meta["station_name"]
         reports.append(merged)
 

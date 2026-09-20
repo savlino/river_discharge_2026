@@ -79,8 +79,11 @@ def archive_raw_observations_tr(station_key: str, window_days: int = 29) -> Opti
     RAW_HUBEAU_DIR.mkdir(parents=True, exist_ok=True)
     archive_path = RAW_HUBEAU_DIR / f"{meta['station_id']}_H_api_snapshot.csv"
     df_raw = pd.DataFrame(records)[["date_obs", "resultat_obs", "code_statut", "code_qualification_obs"]]
-    df_raw.to_csv(archive_path, index=False, encoding="utf-8")
-    print(f"Archived raw observations_tr response: {archive_path}")
+    if archive_path.exists():
+        print(f"Preserved existing Hub'Eau API snapshot: {archive_path}")
+    else:
+        df_raw.to_csv(archive_path, index=False, encoding="utf-8")
+        print(f"Archived raw observations_tr response: {archive_path}")
 
     df_raw["date"] = pd.to_datetime(df_raw["date_obs"]).dt.strftime("%Y-%m-%d")
     df_raw["resultat_obs"] = pd.to_numeric(df_raw["resultat_obs"], errors="coerce")
@@ -112,6 +115,10 @@ def validate_hydro_eaufrance_against_api(df_manual: pd.DataFrame) -> pd.DataFram
             continue
 
         merged["diff_mm"] = np.round(merged["value"] - merged["api_daily_mean"], 1)
+        merged["relative_diff_pct"] = np.round(
+            merged["diff_mm"] / merged["value"].abs().replace(0, np.nan) * 100,
+            2,
+        )
         merged["station_name"] = meta["station_name"]
         reports.append(merged)
 
