@@ -2,6 +2,10 @@
 
 A presentation-first Tableau project showing a daily-granularity snapshot of the Summer 2026 drought across five monitoring stations and four major European river basins. The Tableau workbook is included as `river_summer_2026.twbx`; the CSV pipeline remains available for reproducibility and Tableau Public import.
 
+### Station Map and Overview
+
+![Station map dashboard](assets/dashboard_station_map.png)
+
 **Author:** Pavel Krasavin  
 **Portfolio:** [github.com/savlino](https://github.com/savlino)  
 **LinkedIn:** [linkedin.com/in/pavel-krasavin](https://www.linkedin.com/in/pavel-krasavin)
@@ -17,22 +21,18 @@ The main conclusion is that Summer 2026 was exceptionally dry at several station
 - [Tableau workbook](river_summer_2026.twbx)
 - [Published Tableau Public workbook](https://public.tableau.com/app/profile/pavel.krasavin1517/viz/european_river_discharge_summer_2026/Overall)
 
-### Station Map
+### Station Details and Precipitation Correlations
 
-[![Station map dashboard](assets/dashboard_station_map.png)](https://public.tableau.com/app/profile/pavel.krasavin1517/viz/european_river_discharge_summer_2026/Overall)
-
-### Weather Correlations
-
-[![Correlation dashboard](assets/dashboard_correlation.png)](https://public.tableau.com/app/profile/pavel.krasavin1517/viz/european_river_discharge_summer_2026/Overall)
+![Correlation dashboard](assets/dashboard_correlation.png)
 
 ### Visual Evidence
 
-[![Visual evidence dashboard](assets/dashboard_visual_evidence.png)](https://public.tableau.com/app/profile/pavel.krasavin1517/viz/european_river_discharge_summer_2026/Overall)
+![Visual evidence dashboard](assets/dashboard_visual_evidence.png)
 
 The visual evidence dashboard combines the quantitative station views with manually sourced Copernicus/Sentinel-2 comparisons. The original image pairs remain available as source material:
 
-- [Kaub, 2019-08-23](assets/copernicus_shots/Kaub_2019-08-23_crop.png) vs. [2026-08-13](assets/copernicus_shots/Kaub_2026-08-13_crop.png)
 - [Garonne, 2019-08-22](assets/copernicus_shots/Garrone_2019-08-22_crop.png) vs. [2026-08-19](assets/copernicus_shots/Garrone_2026-08-19_crop.png)
+- [Kaub, 2019-08-23](assets/copernicus_shots/Kaub_2019-08-23_crop.png) vs. [2026-08-13](assets/copernicus_shots/Kaub_2026-08-13_crop.png)
 - [Loire, 2019-08-22](assets/copernicus_shots/Loire_2019-08-22_crop.png) vs. [2026-08-12](assets/copernicus_shots/Loire_2026-08-12_crop.png)
 
 These satellite images are illustrative evidence only. They are not part of the CSV pipeline and should not be interpreted as calibrated water-level measurements.
@@ -68,6 +68,7 @@ At the same time, Blois values are reported relative to a local gauge datum and 
 
 ```text
 river_discharge_2026/
+├── river_summer_2026.twbx        # Packaged Tableau workbook
 ├── assets/                       # Tableau dashboard exports and visual evidence
 │   ├── dashboard_station_map.png
 │   ├── dashboard_correlation.png
@@ -79,6 +80,8 @@ river_discharge_2026/
 │       │   ├── Kaub (Rhein).csv
 │       │   └── Dresden (Elbe).csv
 │       ├── pegelonline/          # Archived PEGELONLINE API snapshots (validation only)
+│       │   ├── kaub_pegelonline_p31d.csv
+│       │   └── dresden_pegelonline_p31d.csv
 │       ├── hydro_eaufrance/      # Manual Hauteur (H) exports (France, primary source)
 │       │   ├── O900001002_H.csv
 │       │   ├── K447001001_H.csv
@@ -87,19 +90,22 @@ river_discharge_2026/
 │       │       ├── O900001002_H_10y_summer_hist.csv
 │       │       ├── K447001001_H_10y_summer_hist.csv
 │       │       └── V303002002_H_10y_summer_hist.csv
-│       └── hubeau/               # Archived Hub'Eau observations_tr API snapshots (validation only)
+│       └── hubeau/               # Archived Hub'Eau recent-observation snapshots (validation only)
+│           ├── O900001002_H_api_snapshot.csv
+│           ├── K447001001_H_api_snapshot.csv
+│           └── V303002002_H_api_snapshot.csv
 ├── output/
 │   ├── european_drought_summer_2026_tidy.csv  # Primary Tidy dataset for Tableau Public
 │   ├── meteo_river_correlation.csv            # Lagged weather cross-correlation matrix
 │   ├── summary_metrics_2026.csv               # Station-level drought impact summary
 │   ├── pegelonline_validation.csv             # NIWIS vs. PEGELONLINE cross-check
-│   └── hydro_eaufrance_validation.csv         # Manual export vs. Hub'Eau observations_tr cross-check
+│   └── hydro_eaufrance_validation.csv         # Manual export vs. Hub'Eau cross-check
 ├── scripts/
 │   ├── config.py                 # Station coordinates & metadata
 │   ├── ingest_niwis.py           # Parser for German NIWIS exports with official thresholds
 │   ├── ingest_pegelonline.py     # PEGELONLINE REST API v2 -- validation only (Germany)
 │   ├── ingest_hydro_eaufrance.py # Parser for French Hauteur (H) manual exports
-│   ├── ingest_hubeau.py          # Hub'Eau observations_tr REST API -- validation only (France)
+│   ├── ingest_hubeau.py          # Hub'Eau recent-observations API -- validation only (France)
 │   ├── ingest_meteo.py           # Open-Meteo API enrichment & lagged correlation analysis
 │   └── build_pipeline.py         # Master pipeline builder
 ├── requirements.txt
@@ -113,11 +119,19 @@ river_discharge_2026/
 | Region / Scope | Primary Data Source | Metric & Unit | Validation Source | Role in Analysis |
 | :--- | :--- | :--- | :--- | :--- |
 | **Germany** (Rhine & Elbe) | **NIWIS** (*niwis-online.de*), manual CSV exports | Water Level (`W`, cm) | PEGELONLINE REST API v2 (rolling ~31-day window) | **Primary Hero Dataset**: Official 1991-2020 reference period with pre-computed calendar-day-specific low-water thresholds. |
-| **France** (Garonne, Loire, Rhône) | **Hydro-Eaufrance** (*hydro.eaufrance.fr*), manual "Hauteur" (H) CSV exports | Water Level (`H`, mm) | Hub'Eau `observations_tr` REST API (rolling ~1-month window) | **Cross-Basin Comparison**: Sub-daily height readings aggregated to daily means and benchmarked against a 10-summer (2016-2025) station-specific reference distribution. |
-| **Atmospheric Enrichment** | **Open-Meteo** (*open-meteo.com*) | Mean temperature (°C), precipitation (mm) | Historical / Forecast REST API | **Enrichment**: Daily precipitation and temperature series for lagged correlation with water level. |
+| **France** (Garonne, Loire, Rhône) | **Hydro-Eaufrance** (*hydro.eaufrance.fr*), manual "Hauteur" (H) CSV exports | Water Level (`H`, mm) | Hub'Eau recent-observations API (official endpoint: `observations_tr`, rolling ~1-month window) | **Cross-Basin Comparison**: Sub-daily height readings aggregated to daily means and benchmarked against a 10-summer (2016-2025) station-specific reference distribution. |
+| **Atmospheric Enrichment** | **Open-Meteo** (*open-meteo.com*) | Mean temperature (°C), precipitation (mm) | Historical Archive REST API | **Enrichment**: Daily precipitation and temperature series for lagged correlation with water level. |
 | **Visual Evidence** | **Copernicus Browser / Sentinel-2** | Cloud-free optical satellite imagery | Manual PNG export to `assets/` | **Qualitative Presentation**: Visual before/after riverbed comparisons for reports and dashboard cards. |
 
 Both countries now follow the same manual-export-as-truth + live-API-as-validation pattern: the tidy dataset is always built from the manually exported CSVs, while the corresponding live REST API is only used to archive an independent snapshot and cross-check it -- it never overrides the tidy values.
+
+### Cross-Validation Results
+
+The independent API checks broadly support the manual exports, but their coverage is limited. PEGELONLINE was added late in the project and exposes only a rolling recent window, so the preserved comparison covers the late-August window available in the archived snapshot. In the current report, the maximum absolute difference is **3.2 cm at Kaub** and **3.4 cm at Dresden** between the NIWIS daily value and the PEGELONLINE daily mean. This is a late-window validation check, not a full-summer API replication.
+
+The validation CSVs also include `relative_diff_pct`, calculated as `diff / abs(manual_value) * 100`. This expresses the API-minus-manual discrepancy relative to the manual observation while remaining meaningful for French stations whose gauge values can be negative. In the current archived reports, the largest PEGELONLINE relative differences are **8.89% at Kaub** and **3.82% at Dresden**. The current Hub'Eau report shows **0.0% for Tonneins** and **0.13% for Blois** where overlap was available. Relative percentages should still be read alongside the absolute difference: near-zero gauge readings can make a small absolute discrepancy look large in relative terms.
+
+Hub'Eau recent-observations validation covers only the late-August dates available in both the live window and the manual French exports. These comparisons validate agreement in the overlapping period; the manual exports remain the authoritative source for the summer dataset and historical baselines.
 
 ---
 
@@ -125,8 +139,8 @@ Both countries now follow the same manual-export-as-truth + live-API-as-validati
 
 During data-source architectural review, several potential data sources were evaluated and deliberately excluded from automated ETL ingestion:
 
-1. **PEGELONLINE REST API (`pegelonline.wsv.de`) / Hub'Eau `observations_tr`**
-   - *Technical Limitation:* Both are open, no-auth REST APIs, but each enforces a rolling window on raw time-series data -- PEGELONLINE ~31 days, Hub'Eau `observations_tr` rejects any `date_debut_obs` older than ~1 calendar month.
+1. **PEGELONLINE REST API (`pegelonline.wsv.de`) / Hub'Eau recent-observations API**
+   - *Technical Limitation:* Both are open, no-auth REST APIs, but each enforces a rolling window on raw time-series data -- PEGELONLINE exposes roughly the most recent month, while Hub'Eau's official `observations_tr` endpoint rejects any `date_debut_obs` older than ~1 calendar month. Because PEGELONLINE validation was implemented late, the archived comparison covers only August 19-31 rather than the full August window.
    - *Architectural Decision:* Neither can supply a full-summer or multi-year baseline. Manual CSV exports (NIWIS for Germany, Hydro-Eaufrance for France) serve as the authoritative source for the tidy dataset; both live APIs are used exclusively to archive an independent snapshot and cross-validate the manual values (see `output/pegelonline_validation.csv` and `output/hydro_eaufrance_validation.csv`).
 
 2. **Danube / Hungary (vizugy.hu / hydroinfo.hu / DanubeHIS)**
@@ -189,6 +203,8 @@ We should not expect a strong direct correlation between precipitation measured 
 
 The current analysis uses local Open-Meteo weather series and a simple 0-14 day lag window. It does **not** calculate basin-wide precipitation totals, upstream-weighted rainfall, travel-time distributions, antecedent soil moisture, evaporation, reservoir operations, or causal effects. The correlation dashboard should therefore be read as an honest exploratory diagnostic: it shows whether the selected local weather series and later station levels move together at any tested lag, not whether local rainfall directly caused the observed river-level change. A stronger research design would require station-specific upstream catchment boundaries, gridded rainfall aggregation, and hydrological routing.
 
+Temperature correlations are retained as a mechanically generated output column for completeness, but no separate temperature-correlation investigation or interpretation is included in this project. That analysis was deliberately left out to prevent the scope from expanding unpredictably beyond the focused water-level and precipitation question.
+
 ### 3. Research Scope and Economic Context
 
 This is a compact portfolio analysis, not a full-scale hydrological or economic research study. Its purpose is to present a sober, reproducible set of water-level numbers, historical-relative positions, validation checks, and visual evidence for Summer 2026. It does not estimate lost output, transport costs, agricultural losses, employment effects, household impacts, or the causal contribution of drought to any individual economic outcome.
@@ -196,7 +212,7 @@ This is a compact portfolio analysis, not a full-scale hydrological or economic 
 The wider economic stakes are included as context rather than as project outputs:
 
 - The [CMCC analysis of droughts and Europe's economy](https://www.cmcc.it/article/droughts-europes-economy-is-paying-the-price-e439-billion-already-lost-while-the-damage-almost-doubles-with-2c) reports that the 2015-2018 European drought has already been associated with an estimated €439 billion in losses, with impacts accumulating over subsequent years; it also models substantially larger losses in a warmer climate. These are multi-year, continent-scale research estimates and must not be presented as estimates produced by this project.
-- For the excluded Danube case, [IntelliNews reported on record-low water levels halting Danube shipping](https://www.intellinews.com/record-low-water-levels-halt-danube-shipping-457678/), including reduced barge loads, higher transport costs, and disruption to tourism and freight. This supplies qualitative economic context for a basin deliberately excluded from the structured data pipeline because suitable open historical data were not available.
+- The excluded Danube case appears to have been hit harder than any of the rivers covered here, although it cannot be ranked directly against them because it is outside the structured dataset. [IntelliNews reported record-low water levels halting Danube shipping](https://www.intellinews.com/record-low-water-levels-halt-danube-shipping-457678/), with reduced barge loads, higher transport costs, and disruption to tourism and freight. Broader reporting also describes cargo shipping being largely halted in Austria, Austrian hydropower generation falling by roughly 30%, and industrial shippers such as Voestalpine shifting freight to rail. Budapest's gauge broke its all-time low repeatedly through the summer, as documented in Section 3. If a future iteration adds Danube coverage, it would likely be the most severe case in the dataset rather than a secondary comparison.
 
 The appropriate claim from this project is therefore narrow: the dashboards document where and how unusually low water levels appeared in the selected stations, while the linked sources explain why those anomalies matter for basin systems and economic activity.
 
@@ -221,4 +237,4 @@ python scripts/build_pipeline.py
 2. `output/meteo_river_correlation.csv`: Lagged cross-correlation results table.
 3. `output/summary_metrics_2026.csv`: Station-level summary table (minimum levels, record-low days, severity distribution).
 4. `output/pegelonline_validation.csv`: NIWIS manual export vs. live PEGELONLINE cross-check (Germany).
-5. `output/hydro_eaufrance_validation.csv`: Hydro-Eaufrance manual export vs. live Hub'Eau `observations_tr` cross-check (France).
+5. `output/hydro_eaufrance_validation.csv`: Hydro-Eaufrance manual export vs. live Hub'Eau recent-observations cross-check (France).

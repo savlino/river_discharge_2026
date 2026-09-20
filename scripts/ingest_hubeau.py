@@ -1,10 +1,11 @@
 """
-Hub'Eau observations_tr ("temps réel") validation module for French rivers.
+Hub'Eau recent-observations validation module for French rivers.
 Fetches live "Hauteur" (H) readings -- same measurement type as the manual
 Hydro-Eaufrance export -- for cross-validation, mirroring the German
 NIWIS (manual) + PEGELONLINE (live validation) design.
 
-Endpoint (rolling ~1-month window only, per Hub'Eau observations_tr limits):
+Hub'Eau names this endpoint `observations_tr` (`tr` = French "temps réel", or
+real time). It exposes only a rolling ~1-month window:
   https://hubeau.eaufrance.fr/api/v2/hydrometrie/observations_tr.json
     ?code_entite={station_code}&grandeur_hydro=H
     &date_debut_obs={start}&date_fin_obs={end}&size=5000
@@ -27,10 +28,10 @@ except ImportError:
     from config import RAW_HUBEAU_DIR, STATIONS
     from ingest_hydro_eaufrance import FRENCH_STATION_KEYS
 
-HUBEAU_OBS_TR_URL = "https://hubeau.eaufrance.fr/api/v2/hydrometrie/observations_tr.json"
+HUBEAU_OBSERVATIONS_URL = "https://hubeau.eaufrance.fr/api/v2/hydrometrie/observations_tr.json"
 
 
-def fetch_observations_tr(
+def fetch_hubeau_api(
     station_code: str,
     start_date: str,
     end_date: str,
@@ -46,7 +47,7 @@ def fetch_observations_tr(
         f"date_fin_obs={end_date}",
         f"size={size}"
     ]
-    url = f"{HUBEAU_OBS_TR_URL}?{'&'.join(params)}"
+    url = f"{HUBEAU_OBSERVATIONS_URL}?{'&'.join(params)}"
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "Mozilla/5.0 (compatible; portfolio-project/1.0)"}
@@ -57,11 +58,11 @@ def fetch_observations_tr(
                 data = json.loads(response.read().decode("utf-8"))
                 return data.get("data", [])
     except Exception as e:
-        print(f"Notice: Hub'Eau observations_tr query for {station_code} returned: {e}")
+        print(f"Notice: Hub'Eau recent-observations query for {station_code} returned: {e}")
     return []
 
 
-def archive_raw_observations_tr(station_key: str, window_days: int = 29) -> Optional[pd.DataFrame]:
+def archive_hubeau_api(station_key: str, window_days: int = 29) -> Optional[pd.DataFrame]:
     """
     Fetches the last `window_days` of live H readings, archives a raw CSV copy
     under data/raw/hubeau/, and returns a daily-aggregated DataFrame.
@@ -72,7 +73,7 @@ def archive_raw_observations_tr(station_key: str, window_days: int = 29) -> Opti
     end_date = date.today()
     start_date = end_date - timedelta(days=window_days)
 
-    records = fetch_observations_tr(meta["station_id"], start_date.isoformat(), end_date.isoformat())
+    records = fetch_hubeau_api(meta["station_id"], start_date.isoformat(), end_date.isoformat())
     if not records:
         return None
 
@@ -83,7 +84,7 @@ def archive_raw_observations_tr(station_key: str, window_days: int = 29) -> Opti
         print(f"Preserved existing Hub'Eau API snapshot: {archive_path}")
     else:
         df_raw.to_csv(archive_path, index=False, encoding="utf-8")
-        print(f"Archived raw observations_tr response: {archive_path}")
+        print(f"Archived raw Hub'Eau response: {archive_path}")
 
     df_raw["date"] = pd.to_datetime(df_raw["date_obs"]).dt.strftime("%Y-%m-%d")
     df_raw["resultat_obs"] = pd.to_numeric(df_raw["resultat_obs"], errors="coerce")
@@ -94,9 +95,9 @@ def archive_raw_observations_tr(station_key: str, window_days: int = 29) -> Opti
     return daily
 
 
-def validate_hydro_eaufrance_against_api(df_manual: pd.DataFrame) -> pd.DataFrame:
+def validate_hydro_eaufrance_against_hubeau(df_manual: pd.DataFrame) -> pd.DataFrame:
     """
-    For each French station, archives the live observations_tr data and compares
+    For each French station, archives the live recent observations and compares
     it against the corresponding manual Hydro-Eaufrance CSV values on overlapping
     dates. Does NOT modify df_manual -- the tidy dataset stays sourced from the
     manual export. Returns a validation report DataFrame (empty if no overlap).
@@ -105,7 +106,7 @@ def validate_hydro_eaufrance_against_api(df_manual: pd.DataFrame) -> pd.DataFram
 
     for station_key in FRENCH_STATION_KEYS:
         meta = STATIONS[station_key]
-        df_api_daily = archive_raw_observations_tr(station_key)
+        df_api_daily = archive_hubeau_api(station_key)
         if df_api_daily is None or df_api_daily.empty:
             continue
 
@@ -132,7 +133,7 @@ def validate_hydro_eaufrance_against_api(df_manual: pd.DataFrame) -> pd.DataFram
 
 if __name__ == "__main__":
     for key in FRENCH_STATION_KEYS:
-        df = archive_raw_observations_tr(key)
+        df = archive_hubeau_api(key)
         if df is not None:
-            print(f"{key}: {len(df)} daily rows from observations_tr")
+            print(f"{key}: {len(df)} daily rows from Hub'Eau")
             print(df.tail())

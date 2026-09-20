@@ -4,3 +4,14 @@ __pycache__/
 *.DS_Store
 .venv/
 env/
+
+# Tableau
+*.twbtemp
+*.tmp
+~*.twb
+~*.twbx
+*.lck
+Tableau Repository/
+
+# Windows
+Thumbs.db

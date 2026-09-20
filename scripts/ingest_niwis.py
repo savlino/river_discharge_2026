@@ -118,7 +118,7 @@ def parse_niwis_csv(
     return df
 
 
-def load_all_niwis_data(directory: Optional[Path] = None) -> pd.DataFrame:
+def load_all_niwis_csv(directory: Optional[Path] = None) -> pd.DataFrame:
     """
     Scans the NIWIS raw directory and parses all matching German station CSV files.
     """
@@ -141,7 +141,7 @@ def load_all_niwis_data(directory: Optional[Path] = None) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    df_all = load_all_niwis_data()
+    df_all = load_all_niwis_csv()
     print(f"Total German station rows ingested: {len(df_all)}")
     if not df_all.empty:
         print(df_all.head())

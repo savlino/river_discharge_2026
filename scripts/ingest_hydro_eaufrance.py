@@ -172,7 +172,7 @@ def parse_hydro_eaufrance_csv(
     return daily.sort_values("date").reset_index(drop=True)
 
 
-def load_all_hydro_eaufrance_data(directory: Optional[Path] = None) -> pd.DataFrame:
+def load_all_hydro_eaufrance_csv(directory: Optional[Path] = None) -> pd.DataFrame:
     """Scans the Hydro-Eaufrance raw directory and parses all configured French station files."""
     raw_dir = directory or RAW_HYDRO_EAUFRANCE_DIR
     records: List[pd.DataFrame] = []
@@ -193,7 +193,7 @@ def load_all_hydro_eaufrance_data(directory: Optional[Path] = None) -> pd.DataFr
 
 
 if __name__ == "__main__":
-    df_all = load_all_hydro_eaufrance_data()
+    df_all = load_all_hydro_eaufrance_csv()
     print(f"Total French station rows ingested: {len(df_all)}")
     if not df_all.empty:
         print(df_all.head())

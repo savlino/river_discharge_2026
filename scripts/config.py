@@ -12,7 +12,6 @@ RAW_PEGELONLINE_DIR = DATA_DIR / "raw" / "pegelonline"
 RAW_HYDRO_EAUFRANCE_DIR = DATA_DIR / "raw" / "hydro_eaufrance"
 RAW_HYDRO_EAUFRANCE_HISTORIC_DIR = RAW_HYDRO_EAUFRANCE_DIR / "Historic"
 RAW_HUBEAU_DIR = DATA_DIR / "raw" / "hubeau"
-PROCESSED_DIR = DATA_DIR / "processed"
 OUTPUT_DIR = BASE_DIR / "output"
 ASSETS_DIR = BASE_DIR / "assets"
 

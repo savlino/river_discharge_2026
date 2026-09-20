@@ -29,7 +29,7 @@ STATION_UUIDS = {
 }
 
 
-def fetch_pegelonline_csv(station_key: str, window: str = "P31D", timeout: int = 15) -> Optional[str]:
+def fetch_pegelonline_api(station_key: str, window: str = "P31D", timeout: int = 15) -> Optional[str]:
     """Fetches the raw CSV text of recent W (water level) measurements for a station."""
     uuid = STATION_UUIDS.get(station_key.upper())
     if not uuid:
@@ -50,12 +50,12 @@ def fetch_pegelonline_csv(station_key: str, window: str = "P31D", timeout: int =
     return None
 
 
-def archive_raw_pegelonline(station_key: str, window: str = "P31D") -> Optional[pd.DataFrame]:
+def archive_raw_pegelonline_api(station_key: str, window: str = "P31D") -> Optional[pd.DataFrame]:
     """
     Fetches the raw API CSV, stores an untouched copy in data/raw/pegelonline/,
     and returns it parsed as a DataFrame with daily-aggregated mean values.
     """
-    raw_text = fetch_pegelonline_csv(station_key, window)
+    raw_text = fetch_pegelonline_api(station_key, window)
     if not raw_text:
         return None
 
@@ -88,7 +88,7 @@ def validate_niwis_against_pegelonline(df_niwis: pd.DataFrame) -> pd.DataFrame:
 
     for station_key in ["KAUB", "DRESDEN"]:
         meta = STATIONS[station_key.upper()]
-        df_api_daily = archive_raw_pegelonline(station_key)
+        df_api_daily = archive_raw_pegelonline_api(station_key)
         if df_api_daily is None or df_api_daily.empty:
             continue
 
@@ -115,7 +115,7 @@ def validate_niwis_against_pegelonline(df_niwis: pd.DataFrame) -> pd.DataFrame:
 
 if __name__ == "__main__":
     for key in ["KAUB", "DRESDEN"]:
-        df = archive_raw_pegelonline(key)
+        df = archive_raw_pegelonline_api(key)
         if df is not None:
             print(f"{key}: {len(df)} daily rows from PEGELONLINE")
             print(df.tail())

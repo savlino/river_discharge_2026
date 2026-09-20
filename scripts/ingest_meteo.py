@@ -15,7 +15,6 @@ except ImportError:
     from config import STATIONS, START_DATE_2026, END_DATE_2026
 
 OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
-OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
 
 def fetch_open_meteo_daily(
@@ -27,7 +26,7 @@ def fetch_open_meteo_daily(
 ) -> pd.DataFrame:
     """
     Fetches daily precipitation sum (mm) and mean 2m temperature (°C) from Open-Meteo.
-    Tries Archive API first, falls back to Historical Forecast API.
+    Uses the archive API because the project covers a completed historical period.
     """
     params = [
         f"latitude={latitude:.4f}",
@@ -39,26 +38,24 @@ def fetch_open_meteo_daily(
     ]
     query_str = "&".join(params)
 
-    for base_url in [OPEN_METEO_ARCHIVE_URL, OPEN_METEO_FORECAST_URL]:
-        url = f"{base_url}?{query_str}"
-        req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "RiverDischargeResearch/1.0 (Portfolio Project)"}
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                if resp.status == 200:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    daily = data.get("daily", {})
-                    if "time" in daily and "temperature_2m_mean" in daily:
-                        df = pd.DataFrame({
-                            "date": daily["time"],
-                            "temp_mean_c": daily["temperature_2m_mean"],
-                            "precip_sum_mm": daily["precipitation_sum"]
-                        })
-                        return df
-        except Exception as e:
-            continue
+    url = f"{OPEN_METEO_ARCHIVE_URL}?{query_str}"
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": "RiverDischargeResearch/1.0 (Portfolio Project)"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                daily = data.get("daily", {})
+                if "time" in daily and "temperature_2m_mean" in daily:
+                    return pd.DataFrame({
+                        "date": daily["time"],
+                        "temp_mean_c": daily["temperature_2m_mean"],
+                        "precip_sum_mm": daily["precipitation_sum"]
+                    })
+    except Exception:
+        pass
 
     # Return empty DataFrame if API unavailable
     return pd.DataFrame()
