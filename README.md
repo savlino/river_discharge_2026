@@ -6,15 +6,30 @@ A presentation-first Tableau project showing a daily-granularity snapshot of the
 **Portfolio:** [github.com/savlino](https://github.com/savlino)  
 **LinkedIn:** [linkedin.com/in/pavel-krasavin](https://www.linkedin.com/in/pavel-krasavin)
 
+## TL;DR
+
+This project is a presentation-first analysis of Summer 2026 river water-level anomalies across five stations on the Rhine, Elbe, Garonne, Loire, and Rhône. It combines manual NIWIS and Hydro-Eaufrance CSV exports, 10-summer French historical baselines, live API validation, Open-Meteo weather enrichment, Python/pandas processing, and Tableau dashboards.
+
+The main conclusion is that Summer 2026 was exceptionally dry at several stations: Kaub on the Rhine reached a new low of 7 cm, while Blois on the Loire was below its 10-summer historical minimum on 58 of 88 available days. The Loire result is consistent with independent reporting describing an exceptionally early and severe drought, but its negative local gauge values and apparent measurement floor require cautious interpretation. Weather correlations are exploratory rather than causal because rainfall must be aggregated across upstream watersheds and routed through the river system. Economic impacts are discussed only as external context; this project reports measured anomalies and does not estimate economic losses.
+
 ## Published Tableau Package
 
 - [Tableau workbook](river_summer_2026.twbx)
 - [Published Tableau Public workbook](https://public.tableau.com/app/profile/pavel.krasavin1517/viz/european_river_discharge_summer_2026/Overall)
-- [Station map dashboard](assets/dashboard_station_map.png)
-- [Correlation dashboard](assets/dashboard_correlation.png)
-- [Visual evidence dashboard](assets/dashboard_visual_evidence.png)
 
-The visual evidence dashboard combines the quantitative station views with manually sourced Copernicus/Sentinel-2 comparisons:
+### Station Map
+
+[![Station map dashboard](assets/dashboard_station_map.png)](https://public.tableau.com/app/profile/pavel.krasavin1517/viz/european_river_discharge_summer_2026/Overall)
+
+### Weather Correlations
+
+[![Correlation dashboard](assets/dashboard_correlation.png)](https://public.tableau.com/app/profile/pavel.krasavin1517/viz/european_river_discharge_summer_2026/Overall)
+
+### Visual Evidence
+
+[![Visual evidence dashboard](assets/dashboard_visual_evidence.png)](https://public.tableau.com/app/profile/pavel.krasavin1517/viz/european_river_discharge_summer_2026/Overall)
+
+The visual evidence dashboard combines the quantitative station views with manually sourced Copernicus/Sentinel-2 comparisons. The original image pairs remain available as source material:
 
 - [Kaub, 2019-08-23](assets/copernicus_shots/Kaub_2019-08-23_crop.png) vs. [2026-08-13](assets/copernicus_shots/Kaub_2026-08-13_crop.png)
 - [Garonne, 2019-08-22](assets/copernicus_shots/Garrone_2019-08-22_crop.png) vs. [2026-08-19](assets/copernicus_shots/Garrone_2026-08-19_crop.png)
@@ -97,9 +112,9 @@ river_discharge_2026/
 
 | Region / Scope | Primary Data Source | Metric & Unit | Validation Source | Role in Analysis |
 | :--- | :--- | :--- | :--- | :--- |
-| **Germany** (Rhine & Elbe) | **NIWIS** (*niwis-online.de*), manual CSV exports | Water Level ($W$, $\text{cm}$) | PEGELONLINE REST API v2 (rolling ~31-day window) | **Primary Hero Dataset**: Official 1991–2020 reference period with pre-computed calendar-day-specific low-water thresholds. |
-| **France** (Garonne, Loire, Rhône) | **Hydro-Eaufrance** (*hydro.eaufrance.fr*), manual "Hauteur" (H) CSV exports | Water Level ($H$, $\text{mm}$) | Hub'Eau `observations_tr` REST API (rolling ~1-month window) | **Cross-Basin Comparison**: Sub-daily height readings aggregated to daily means and benchmarked against a 10-summer (2016-2025) station-specific reference distribution. |
-| **Atmospheric Enrichment** | **Open-Meteo** (*open-meteo.com*) | Mean Temp ($^\circ\text{C}$), Precip ($\text{mm}$) | Historical / Forecast REST API | **Enrichment**: Daily precipitation and temperature series for lagged correlation with water level. |
+| **Germany** (Rhine & Elbe) | **NIWIS** (*niwis-online.de*), manual CSV exports | Water Level (`W`, cm) | PEGELONLINE REST API v2 (rolling ~31-day window) | **Primary Hero Dataset**: Official 1991-2020 reference period with pre-computed calendar-day-specific low-water thresholds. |
+| **France** (Garonne, Loire, Rhône) | **Hydro-Eaufrance** (*hydro.eaufrance.fr*), manual "Hauteur" (H) CSV exports | Water Level (`H`, mm) | Hub'Eau `observations_tr` REST API (rolling ~1-month window) | **Cross-Basin Comparison**: Sub-daily height readings aggregated to daily means and benchmarked against a 10-summer (2016-2025) station-specific reference distribution. |
+| **Atmospheric Enrichment** | **Open-Meteo** (*open-meteo.com*) | Mean temperature (°C), precipitation (mm) | Historical / Forecast REST API | **Enrichment**: Daily precipitation and temperature series for lagged correlation with water level. |
 | **Visual Evidence** | **Copernicus Browser / Sentinel-2** | Cloud-free optical satellite imagery | Manual PNG export to `assets/` | **Qualitative Presentation**: Visual before/after riverbed comparisons for reports and dashboard cards. |
 
 Both countries now follow the same manual-export-as-truth + live-API-as-validation pattern: the tidy dataset is always built from the manually exported CSVs, while the corresponding live REST API is only used to archive an independent snapshot and cross-check it -- it never overrides the tidy values.
@@ -143,14 +158,14 @@ Every row in `output/european_drought_summer_2026_tidy.csv` represents a single 
 - `value`: Daily mean measured value. French "Hauteur" values are relative to a local, station-specific gauge datum and can be negative (e.g. Blois) -- only meaningful as a day-over-day trend within the same station, not comparable in absolute terms across stations
 - `reference_period`: `1991-2020` official period for NIWIS stations; `2016-2025 summer reference (10 summers, Hydro-Eaufrance)` for French stations
 - `seasonal_norm`: For Germany, the calendar-day-specific "niedrig" (low) threshold from the NIWIS export. For France, the median of the 2016-2025 reference distribution for the same point in the season
-- `relative_position_pct`: For Germany, a ratio vs. the day-specific threshold ($\frac{\text{value}}{\text{seasonal\_norm}} \times 100$). For France, the value's **percentile rank (0-100) against the 2016-2025 historical distribution** for the same point in the season. This field is deliberately **not** named `pct_of_seasonal_norm`: French gauge readings sit on arbitrary local datums and are frequently negative, which makes a percentage-of-norm ratio mathematically meaningless for those stations. A percentile rank is datum-independent and comparable across stations
-- `severity_class`: For Germany, NIWIS's official calendar-day-specific bands (`Normal` / `Niedrig` / `Sehr niedrig` / `Extrem niedrig`). For France, percentile bands against the 10-summer reference: $\le\!10$ = `Extrem niedrig`, $\le\!25$ = `Sehr niedrig`, $\le\!50$ = `Niedrig`, else `Normal`
+- `relative_position_pct`: For Germany, `value / seasonal_norm * 100`, where `seasonal_norm` is the day-specific NIWIS threshold. For France, the value's **percentile rank (0-100) against the 2016-2025 historical distribution** for the same point in the season. This field is deliberately **not** named `pct_of_seasonal_norm`: French gauge readings sit on arbitrary local datums and are frequently negative, which makes a percentage-of-norm ratio mathematically meaningless for those stations. A percentile rank is datum-independent and comparable across stations
+- `severity_class`: For Germany, NIWIS's official calendar-day-specific bands (`Normal` / `Niedrig` / `Sehr niedrig` / `Extrem niedrig`). For France, percentile bands against the 10-summer reference: `<= 10` = `Extrem niedrig`, `<= 25` = `Sehr niedrig`, `<= 50` = `Niedrig`, else `Normal`
 - `historical_min_record`: Known pre-2026 record low. For Germany, the official record (e.g. 25 cm for Kaub). For France, the lowest daily mean observed across the 10 reference summers
 - `is_below_historical_min`: `True` if the day's value fell below `historical_min_record`
 - `data_source`: Provenance of the river measurement (`NIWIS_manual_export` or `HydroEaufrance_manual_export`) -- the tidy dataset never contains fabricated/synthetic rows
 - `meteo_data_source`: Provenance of the weather enrichment (`OpenMeteo_API`, or `Synthetic_fallback` only if explicitly opted into via `ALLOW_SYNTHETIC_FALLBACK` in `build_pipeline.py`)
-- `temp_mean_c`: Daily mean temperature ($^\circ\text{C}$) from Open-Meteo
-- `precip_sum_mm`: Daily precipitation sum ($\text{mm}$) from Open-Meteo
+- `temp_mean_c`: Daily mean temperature (°C) from Open-Meteo
+- `precip_sum_mm`: Daily precipitation sum (mm) from Open-Meteo
 
 **Known data gap:** the Blois (Loire) manual export only covers June 1 – August 27, 2026 (88 of 92 days) -- the source export did not include the final days of August. This shows up as a shorter series for Blois in Tableau; it is a genuine gap in the provided source data, not a pipeline defect.
 
@@ -160,10 +175,30 @@ Every row in `output/european_drought_summer_2026_tidy.csv` represents a single 
 For each French station, the ten merged summers in `data/raw/hydro_eaufrance/Historic/` are aggregated to daily means. For a given calendar day, the reference sample pools all historical daily means falling within **±7 calendar days across all 10 summers** (~150 observations), which keeps percentiles stable -- a single calendar day on its own would only offer 10 values. Each 2026 daily value is then scored as its percentile rank within that pooled sample. Because the reference follows the seasonal curve, this correctly distinguishes "low for early June" from "low for late August" instead of comparing against a single flat summer average.
 
 ### 2. Lagged Weather-Hydrology Cross-Correlation
-The module `scripts/ingest_meteo.py` computes Pearson cross-correlations between river water level and meteorological drivers across time lags of $0$ to $14$ days, exported to `output/meteo_river_correlation.csv` with columns `corr_temp_vs_level` and `corr_7d_precip_vs_level` (both metrics are water levels, not discharge -- the column names were corrected to reflect this):
-$$\rho(\tau) = \text{corr}\big(\text{river\_value}(t + \tau), \text{weather}(t)\big)$$
+The module `scripts/ingest_meteo.py` computes Pearson cross-correlations between river water level and meteorological drivers across lags 0 to 14 days. Results are exported to `output/meteo_river_correlation.csv` with columns `corr_temp_vs_level` and `corr_7d_precip_vs_level` (both metrics are water levels, not discharge).
 
-`lag_days` = $\tau$ means **weather leads, river lags**: the river value observed $\tau$ days later is correlated against the weather recorded on day $t$. In plain terms: a `lag_days = 5` row means precipitation accumulated during the preceding 7-day window (ending on day $t$) is compared with the river level observed **five days later** ($t+5$). This directionality matters for the interpretation -- it tests whether weather *predicts* a future change in river level, not the reverse.
+The calculation is:
+
+`correlation at lag tau = corr(river_value at t + tau, weather at t)`
+
+`lag_days` means **weather leads, river lags**: the river value observed that many days later is correlated against the weather recorded on the earlier day. In plain terms: a `lag_days = 5` row means precipitation accumulated during the preceding 7-day window is compared with the river level observed **five days later**. This directionality matters for the interpretation -- it tests whether weather *predicts* a future change in river level, not the reverse.
+
+#### Why this is an exploratory signal, not a causal rainfall model
+
+We should not expect a strong direct correlation between precipitation measured at a station coordinate and the water level at that same station. River levels integrate rainfall across an upstream watershed: precipitation may fall far from the gauge, travel through tributaries, arrive after a basin-specific routing delay, or be moderated by soil, groundwater, reservoirs, abstractions, and channel conditions. The [USGS overview of watersheds and drainage basins](https://www.usgs.gov/water-science-school/science/watersheds-and-drainage-basins) provides the relevant hydrological context.
+
+The current analysis uses local Open-Meteo weather series and a simple 0-14 day lag window. It does **not** calculate basin-wide precipitation totals, upstream-weighted rainfall, travel-time distributions, antecedent soil moisture, evaporation, reservoir operations, or causal effects. The correlation dashboard should therefore be read as an honest exploratory diagnostic: it shows whether the selected local weather series and later station levels move together at any tested lag, not whether local rainfall directly caused the observed river-level change. A stronger research design would require station-specific upstream catchment boundaries, gridded rainfall aggregation, and hydrological routing.
+
+### 3. Research Scope and Economic Context
+
+This is a compact portfolio analysis, not a full-scale hydrological or economic research study. Its purpose is to present a sober, reproducible set of water-level numbers, historical-relative positions, validation checks, and visual evidence for Summer 2026. It does not estimate lost output, transport costs, agricultural losses, employment effects, household impacts, or the causal contribution of drought to any individual economic outcome.
+
+The wider economic stakes are included as context rather than as project outputs:
+
+- The [CMCC analysis of droughts and Europe's economy](https://www.cmcc.it/article/droughts-europes-economy-is-paying-the-price-e439-billion-already-lost-while-the-damage-almost-doubles-with-2c) reports that the 2015-2018 European drought has already been associated with an estimated €439 billion in losses, with impacts accumulating over subsequent years; it also models substantially larger losses in a warmer climate. These are multi-year, continent-scale research estimates and must not be presented as estimates produced by this project.
+- For the excluded Danube case, [IntelliNews reported on record-low water levels halting Danube shipping](https://www.intellinews.com/record-low-water-levels-halt-danube-shipping-457678/), including reduced barge loads, higher transport costs, and disruption to tourism and freight. This supplies qualitative economic context for a basin deliberately excluded from the structured data pipeline because suitable open historical data were not available.
+
+The appropriate claim from this project is therefore narrow: the dashboards document where and how unusually low water levels appeared in the selected stations, while the linked sources explain why those anomalies matter for basin systems and economic activity.
 
 ---
 
